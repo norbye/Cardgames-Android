@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Kortspill</string>
+    <string name="action_settings">Innstillinger</string>
+
+
+    <string name="example_game">Eksempel spill</string>
+</resources>
