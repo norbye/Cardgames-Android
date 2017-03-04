@@ -1,11 +1,14 @@
 package com.norbye.dev.cardgames;
 
 import android.content.Context;
+import android.content.Intent;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Menu;
@@ -13,16 +16,16 @@ import android.view.MenuItem;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import com.norbye.dev.cardgames.db.DBOpenHelper;
+import com.norbye.dev.cardgames.db.TableData;
 
 public class MainActivity extends AppCompatActivity {
+
+    Context context = this;
+    DBOpenHelper db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,25 +33,48 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        //context.deleteDatabase("cardgames");
+        db = new DBOpenHelper(context);
 
         //Action when floating button is clicked
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        /*FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+                Snackbar.make(view, "Add custom game", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
             }
-        });
+        });*/
 
         //Setup listview adapter
         final ListView listview = (ListView) findViewById(R.id.game_list);
-        String[] values = new String[] { "1,Kontinental", "2,Amerikaner", "3,Janif", "4,Spardam" };
-
-        final ArrayList<String> list = new ArrayList<String>();
-        for (int i = 0; i < values.length; ++i) {
-            list.add(values[i]);
+        //Fetch values
+        Cursor c = db.get(db,
+                TableData.TableInfo.GAMETYPE_TABLE_NAME,
+                new String[]{
+                        TableData.TableInfo.GAMETYPE_ID,
+                        TableData.TableInfo.GAMETYPE_NAME},
+                null,
+                null,
+                TableData.TableInfo.GAMETYPE_NAME,
+                null);
+        String[] values = new String[c.getCount()];
+        if(values.length > 0) {
+            c.moveToFirst();
+            do {
+                try {
+                    values[c.getPosition()] = c.getString(c.getColumnIndexOrThrow(TableData.TableInfo.GAMETYPE_ID)) + "," +
+                            c.getString(c.getColumnIndexOrThrow(TableData.TableInfo.GAMETYPE_NAME));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            } while (c.moveToNext());
         }
+        for(int i = 0; i < values.length; i++){
+            if(values[i] != null)
+                Log.d("Cardgames", values[i]);
+        }
+        //Insert values into listview
         final CustomArrayAdapter adapter = new CustomArrayAdapter(this,
                 values);
         listview.setAdapter(adapter);
@@ -60,7 +86,15 @@ public class MainActivity extends AppCompatActivity {
                                     int position, long id) {
                 final String item = (String) parent.getItemAtPosition(position);
                 //Send user to a view where it can start a game
-                Toast.makeText(getApplicationContext(), "Clicked" + view.getTag(), Toast.LENGTH_SHORT).show();
+                try{
+                    Intent i = new Intent(context, GameActivity.class);
+                    Bundle b = new Bundle();
+                    b.putInt("game_type_id", Integer.parseInt(view.getTag().toString()));
+                    i.putExtras(b);
+                    startActivity(i);
+                }catch(NullPointerException e) {
+                    Snackbar.make(view, "Ugylidig spill id", Snackbar.LENGTH_SHORT).setAction("Action", null).show();
+                }
             }
 
         });
@@ -82,6 +116,9 @@ public class MainActivity extends AppCompatActivity {
                     .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             View rowView = inflater.inflate(R.layout.game_list_1, parent, false);
             //Separate ID and title
+            if(values[position] == null){
+                return rowView;
+            }
             String[] split = values[position].split(",", 2);
             int id = Integer.parseInt(split[0]);
             String text = split[1];
