@@ -1,6 +1,8 @@
 package com.norbye.dev.cardgames;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -8,15 +10,20 @@ import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
+import android.text.InputType;
 import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.norbye.dev.cardgames.db.DBOpenHelper;
 import com.norbye.dev.cardgames.db.TableData.*;
@@ -31,7 +38,7 @@ import com.norbye.dev.cardgames.entities.Player;
 public class GameActivity extends AppCompatActivity {
 
     DBOpenHelper db;
-    Context context = this;
+    public Context context = this;
     private GameType gameType;
     private Game game;
 
@@ -91,11 +98,7 @@ public class GameActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(game.addPlayer(null)) {
-                    Snackbar.make(view, "Added player", Snackbar.LENGTH_SHORT)
-                            .setAction("Action", null).show();
-                    loadView();
-                }
+                addPlayer();
             }
         });
         loadView();
@@ -127,28 +130,7 @@ public class GameActivity extends AppCompatActivity {
             Player[] players = game.getPlayers();
             for(int i = 0; i < players.length; i++){
                 TableRow tr = new TableRow(this);
-                if(players[i].name != ""){
-                    tr.addView(newTextView(players[i].name));
-                }else {
-                    EditText etName = newEditText("Navn");
-                    etName.setTag(players[i]);
-                    //Get all player names
-                    Cursor c = db.get(
-                            db,                                         //DB
-                            TableInfo.PLAYER_TABLE_NAME,                  //Table
-                            new String[]{                               //Selection
-                                    TableInfo.PLAYER_ID,
-                                    TableInfo.PLAYER_NAME
-                            },
-                            null,                               //whereClause
-                            null,            //whereArgs
-                            null,                                       //orderBy
-                            null                                         //Limit
-                    );
-                    //Add TextWatch to etName to automatically update name when edittext is left, and reload the view
-                    etName.addTextChangedListener(new EditNameTextWatcher(etName));
-                    tr.addView(etName);
-                }
+                tr.addView(newTextView(players[i].name));
                 if(gameType.rounds == 0){
                     tr.addView(newEditText(""));
                 }else{
@@ -179,6 +161,60 @@ public class GameActivity extends AppCompatActivity {
         return et;
     }
 
+    private void addPlayer(){
+        LinearLayout ll = new LinearLayout(this);
+        AlertDialog.Builder alert = new AlertDialog.Builder(this);
+        final int id = View.generateViewId();
+        //Get all player names
+        Cursor c = db.get(
+                db,                                 //DB
+                TableInfo.PLAYER_TABLE_NAME,        //Table
+                new String[]{                       //Selection
+                        TableInfo.PLAYER_ID,
+                        TableInfo.PLAYER_NAME
+                },
+                null,                               //whereClause
+                null,                               //whereArgs
+                null,                               //orderBy
+                null                                //Limit
+        );
+        final String[] playerNames = new String[c.getCount()];
+        final int[] playerIds = new int[c.getCount()];
+        if(c.getCount() > 0){
+            c.moveToFirst();
+            do{
+                try {
+                    playerIds[c.getPosition()] = c.getInt(c.getColumnIndexOrThrow(TableInfo.PLAYER_ID));
+                    playerNames[c.getPosition()] = c.getString(c.getColumnIndexOrThrow(TableInfo.PLAYER_NAME));
+                }catch(Exception e){
+                    e.printStackTrace();
+                }
+            }while(c.moveToNext());
+        }
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.select_dialog_singlechoice, playerNames);
+        AutoCompleteTextView acTextView =  new AutoCompleteTextView(this);
+        acTextView.setAdapter(adapter);
+        acTextView.setThreshold(1);
+        acTextView.setId(id);
+        acTextView.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        ll.addView(acTextView);
+        alert.setView(ll);
+        alert.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            //@Override
+            public void onClick(DialogInterface dialog, int which) {
+                AutoCompleteTextView input = (AutoCompleteTextView) ((AlertDialog) dialog).findViewById(id);
+                Editable value = input.getText();
+                String out = value.toString();
+                if(out == ""){
+                    //Snackbar.make()
+                    return;
+                }
+                Toast.makeText(getApplicationContext(), "Out: " + out, Toast.LENGTH_SHORT).show();
+            }
+        });
+        alert.show();
+    }
+
     private TextWatcher gameTw = new TextWatcher() {
         @Override
         public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
@@ -195,22 +231,6 @@ public class GameActivity extends AppCompatActivity {
 
         }
     };
-
-    private class EditNameTextWatcher implements TextWatcher{
-
-        private View view;
-        private EditNameTextWatcher(View view) {
-            this.view = view;
-        }
-
-        public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
-        public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
-
-        public void afterTextChanged(Editable editable) {
-            String name = editable.toString();
-            //Check if name corresponds with any registered players
-        }
-    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

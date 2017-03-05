@@ -12,11 +12,14 @@ import com.norbye.dev.cardgames.db.TableData.*;
 
 public class Game {
 
+    private DBOpenHelper db;
+    private Context context;
+
     public int id;
     public String name = "";
-    private DBOpenHelper db;
 
     public Game(Context context, int game_id){
+        this.context = context;
         this.id = game_id;
         db = new DBOpenHelper(context);
     }
@@ -67,7 +70,7 @@ public class Game {
         c.moveToFirst();
         do{
             try {
-                players[c.getPosition()] = new Player(c.getInt(c.getColumnIndexOrThrow(TableInfo.GAME_PLAYER_PLAYER_ID)));
+                players[c.getPosition()] = new Player(this.context, c.getInt(c.getColumnIndexOrThrow(TableInfo.GAME_PLAYER_PLAYER_ID)));
             }catch(Exception e){
                 e.printStackTrace();
             }
