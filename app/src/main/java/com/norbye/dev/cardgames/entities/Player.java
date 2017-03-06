@@ -24,31 +24,28 @@ public class Player {
         this.id = player_id;
         //Grab player information
         db = new DBOpenHelper(context);
-        /*Cursor c = db.get(
-                db,                                         //DB
-                TableInfo.PLAYER_TABLE_NAME,           //Table
-                new String[]{                               //Selection
+        Cursor c = db.get(
+                db,                               //DB
+                TableInfo.PLAYER_TABLE_NAME,      //Table
+                new String[]{                     //Selection
                         TableInfo.PLAYER_NAME
 
                 },
-                TableInfo.GAME_PLAYER_GAME_ID + "=?",       //whereClause
-                new String[]{                               //whereArgs
+                TableInfo.PLAYER_ID + "=?",       //whereClause
+                new String[]{                     //whereArgs
                         this.id + ""
                 },
-                TableInfo.GAME_PLAYER_ORDER,                //orderBy
-                null                                        //Limit
+                null,                             //orderBy
+                "1"                               //Limit
         );
-        Player[] players = new Player[c.getCount()];
         if(c.getCount() > 0) {
             c.moveToFirst();
-            do {
-                try {
-                    players[c.getPosition()] = new Player(this.context, c.getInt(c.getColumnIndexOrThrow(TableInfo.GAME_PLAYER_PLAYER_ID)));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            } while (c.moveToNext());
-        }*/
+            try {
+                this.name = c.getString(c.getColumnIndexOrThrow(TableInfo.PLAYER_NAME));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public double getScore(Game game){

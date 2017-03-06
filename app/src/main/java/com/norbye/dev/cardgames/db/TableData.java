@@ -46,7 +46,7 @@ public class TableData {
 
         public static final String RESULT_ID = "result_id";
         public static final String RESULT_GAME_PLAYER_ID = "game_player_id";
-        public static final String RESULT_INDEX = "index";
+        public static final String RESULT_INDEX = "\"index\"";
         public static final String RESULT_VALUE = "value";
     }
 }

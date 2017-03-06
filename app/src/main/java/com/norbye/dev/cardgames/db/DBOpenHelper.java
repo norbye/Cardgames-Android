@@ -89,7 +89,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
     }
 
-    public boolean insert(DBOpenHelper db, String table, String[] columns, String[] values){
+    public long insert(DBOpenHelper db, String table, String[] columns, String[] values){
         try{
             SQLiteDatabase SQDB = db.getWritableDatabase();
             ContentValues cv = new ContentValues();
@@ -98,14 +98,11 @@ public class DBOpenHelper extends SQLiteOpenHelper {
                 cv.put(columns[i], values[i]);
             }
 
-            SQDB.insert(table, null, cv);
-
-            Log.d("DBOpenHelper", "One row inserted");
-            return true;
+            return SQDB.insert(table, null, cv);
         }catch(Exception e){
             e.printStackTrace();
         }
-        return false;
+        return -2;
     }
 
     public Cursor get(DBOpenHelper db, String table, String[] columns, String whereClause, String[] whereArgs, String orderBy, String limit){

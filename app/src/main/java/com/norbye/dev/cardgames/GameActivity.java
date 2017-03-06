@@ -77,7 +77,7 @@ public class GameActivity extends AppCompatActivity {
             game = new Game(context, c.getInt(c.getColumnIndexOrThrow(TableInfo.GAME_ID)));
         }else{
             //Create new game
-            db.insert(
+            int gameId = (int) db.insert(
                     db,                             //DB
                     TableInfo.GAME_TABLE_NAME,      //Table
                     new String[]{
@@ -91,6 +91,11 @@ public class GameActivity extends AppCompatActivity {
                             "1"
                     }
             );
+            if(gameId > 0){
+                game = new Game(context, gameId);
+            }else{
+                finish();
+            }
         }
 
         //Add player
@@ -203,13 +208,58 @@ public class GameActivity extends AppCompatActivity {
             //@Override
             public void onClick(DialogInterface dialog, int which) {
                 AutoCompleteTextView input = (AutoCompleteTextView) ((AlertDialog) dialog).findViewById(id);
-                Editable value = input.getText();
-                String out = value.toString();
-                if(out == ""){
+                String playerName = input.getText().toString();
+                if(playerName == ""){
                     //Snackbar.make()
                     return;
                 }
-                Toast.makeText(getApplicationContext(), "Out: " + out, Toast.LENGTH_SHORT).show();
+                //Check for matches in playerNames array
+                long playerId = 0;
+                for(int i = 0; i < playerNames.length; i++){
+                    if(playerName.equalsIgnoreCase(playerNames[i])){
+                        playerId = playerIds[i];
+                    }
+                }
+                if(playerId == 0){
+                    //Create new player
+                    playerId = db.insert(
+                            db,
+                            TableInfo.PLAYER_TABLE_NAME,
+                            new String[]{
+                                    TableInfo.PLAYER_NAME
+                            },
+                            new String[]{
+                                    playerName
+                            }
+                    );
+                    if(playerId < 0){
+                        //Failed to create new player
+                        return;
+                    }
+                }
+                //Connect player to game
+                long rowId = db.insert(
+                        db,
+                        TableInfo.GAME_PLAYER_TABLE_NAME,
+                        new String[]{
+                                TableInfo.GAME_PLAYER_GAME_ID,
+                                TableInfo.GAME_PLAYER_PLAYER_ID,
+                                TableInfo.GAME_PLAYER_ORDER
+                        },
+                        new String[]{
+                                game.id + "",
+                                playerId + "",
+                                System.currentTimeMillis() + ""
+                        }
+                );
+                if(rowId > 0){
+                    //Success
+                    Toast.makeText(getApplicationContext(), "Success", Toast.LENGTH_SHORT).show();
+                    loadView();
+                    return;
+                }
+                //Failure
+                Toast.makeText(getApplicationContext(), "Failure " + rowId, Toast.LENGTH_SHORT).show();
             }
         });
         alert.show();

@@ -24,7 +24,7 @@ public class Game {
         db = new DBOpenHelper(context);
     }
 
-    public boolean addPlayer(Player player) {
+    public long addPlayer(Player player) {
         int player_id = 0;
         if (player != null) {
             player_id = player.id;
@@ -65,6 +65,7 @@ public class Game {
                 null                                        //Limit
         );
         Player[] players = new Player[c.getCount()];
+        System.out.println("GamePlayercount: " + c.getCount());
         if(c.getCount() == 0)
             return players;
         c.moveToFirst();
