@@ -133,18 +133,74 @@ public class GameActivity extends AppCompatActivity {
             tl.addView(trTop, 0);
             //Print the other layers
             Player[] players = game.getPlayers();
+            int[] sum = new int[players.length];
             for(int i = 0; i < players.length; i++){
                 TableRow tr = new TableRow(this);
                 tr.addView(newTextView(players[i].name));
                 if(gameType.rounds == 0){
+                    //Fetch inserted rows and add one more
+                    Cursor c = db.get(
+                            db,                                         //DB
+                            TableInfo.GAME_PLAYER_TABLE_NAME,           //Table
+                            new String[]{                               //Selection
+                                    TableInfo.GAME_PLAYER_ID
+                            },
+                            TableInfo.GAME_PLAYER_PLAYER_ID + "=? AND " //whereClause
+                            + TableInfo.GAME_PLAYER_GAME_ID + "=?",                               
+                            new String[]{                               //whereArgs
+                                    players[i].id + "",
+                                    game.id + ""
+                            },
+                            null,                                       //orderBy
+                            null                                        //Limit
+                    );
+                    if(c.getCount() > 0){
+                        c.moveToFirst();
+                        try{
+                            int game_player_id = c.getInt(c.getColumnIndexOrThrow(TableInfo.GAME_PLAYER_ID));
+                        }catch(Exception e){
+                            e.printStackTrace(e);
+                            //skip the player and continue with other players
+                            continue;
+                        }
+                        c = db.get(
+                                db,                                         //DB
+                                TableInfo.RESULT_TABLE_NAME,           //Table
+                                new String[]{                               //Selection
+                                        TableInfo.RESULT_INDEX,
+                                        TableInfo.RESULT_VALUE
+                                },
+                                TableInfo.RESULT_GAME_PLAYER_ID + "=?", //whereClause                               
+                                new String[]{                               //whereArgs
+                                        game_player_id + "",
+                                },
+                                TableInfo.RESULT_INDEX,                                       //orderBy
+                                null                                        //Limit
+                        );
+                        if(c.getCount() > 0){
+                            c.moveToFirst();
+                            do{
+                                try {
+                                    EditText et = newEditText("");
+                                    et.setTag(c.getInt(c.getColumnIndexOrThrow(TableInfo.RESULT_INDEX)) + "");
+                                    et.setText(c.getInt(c.getColumnIndexOrThrow(TableInfo.RESULT_VALUE)) + "");
+                                    et.addTextChangedListener(twGame);
+                                    tr.addView(et);
+                                }catch(Exception e){
+                                    e.printStackTrace();
+                                }
+                            }while(c.moveToNext());
+                        }
+                    }
                     tr.addView(newEditText(""));
                 }else{
+                    //Fetch inserted values for each row, but display all rows
                     for(int k = 0; k < gameType.rounds; k++){
                         tr.addView(newEditText(""));
                     }
                 }
                 //Add sum and position
-                tr.addView(newTextView("0"));
+                tr.addView(newTextView(sum[i] + ""));
                 tr.addView(newTextView("-"));
                 //Append to tablelayout
                 tl.addView(tr);
@@ -265,7 +321,7 @@ public class GameActivity extends AppCompatActivity {
         alert.show();
     }
 
-    private TextWatcher gameTw = new TextWatcher() {
+    private TextWatcher twGame = new TextWatcher() {
         @Override
         public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
 
@@ -278,7 +334,7 @@ public class GameActivity extends AppCompatActivity {
 
         @Override
         public void afterTextChanged(Editable editable) {
-
+            //Update table with new values
         }
     };
 
