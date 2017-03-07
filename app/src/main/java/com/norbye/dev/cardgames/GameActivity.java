@@ -181,6 +181,7 @@ public class GameActivity extends AppCompatActivity {
                             c.moveToFirst();
                             do{
                                 try {
+                                    sum[i] += c.getInt(c.getColumnIndexOrThrow(TableInfo.RESULT_VALUE));
                                     EditText et = newEditText("");
                                     et.setTag(c.getInt(c.getColumnIndexOrThrow(TableInfo.RESULT_INDEX)) + "");
                                     et.setText(c.getInt(c.getColumnIndexOrThrow(TableInfo.RESULT_VALUE)) + "");
