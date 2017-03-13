@@ -1,5 +1,6 @@
 package com.norbye.dev.cardgames.entities;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.widget.Toast;
@@ -71,7 +72,7 @@ public class Player {
             c.moveToFirst();
             try {
                 int game_player_id = c.getInt(c.getColumnIndexOrThrow(TableInfo.GAME_PLAYER_ID));
-                c = db.get(
+                Cursor c2 = db.get(
                         db,                               //DB
                         TableInfo.RESULT_TABLE_NAME,      //Table
                         new String[]{                     //Selection
@@ -85,14 +86,28 @@ public class Player {
                         TableInfo.RESULT_INDEX,                             //orderBy
                         null                               //Limit
                 );
-                if(c.getCount() > 0) {
+                if(c2.getCount() > 0) {
                     //Get last index
-                    c.moveToLast();
-                    score = new int[c.getInt(c.getColumnIndexOrThrow(TableInfo.RESULT_INDEX)) + 1];
+                    c2.moveToLast();
+                    if(c2.getInt(c2.getColumnIndexOrThrow(TableInfo.RESULT_INDEX.replace("\"", ""))) + 1 > c2.getCount()){
+                        score = new int[c2.getInt(c2.getColumnIndexOrThrow(TableInfo.RESULT_INDEX.replace("\"", ""))) + 1];
+                    }else{
+                        score = new int[c2.getCount()];
+                    }
+                    //Insert -1 values
+                    for(int i = 0; i < score.length; i++){
+                        score[i] = -1;
+                    }
                     //Store values
-                    c.moveToFirst();
+                    c2.moveToFirst();
                     try {
-                        score[c.getInt(c.getColumnIndexOrThrow(TableInfo.RESULT_INDEX))] = c.getInt(c.getColumnIndexOrThrow(TableInfo.RESULT_VALUE));
+                        do {
+                            if(c2.getInt(c2.getColumnIndexOrThrow(TableInfo.RESULT_INDEX.replace("\"", ""))) != -1) {
+                                score[c2.getInt(c2.getColumnIndexOrThrow(TableInfo.RESULT_INDEX.replace("\"", "")))] = c2.getInt(c2.getColumnIndexOrThrow(TableInfo.RESULT_VALUE));
+                            }else{
+                                score[c2.getPosition()] = c2.getInt(c2.getColumnIndexOrThrow(TableInfo.RESULT_VALUE));
+                            }
+                        }while(c2.moveToNext());
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -126,8 +141,26 @@ public class Player {
             c.moveToFirst();
             try {
                 int game_player_id = c.getInt(c.getColumnIndexOrThrow(TableInfo.GAME_PLAYER_ID));
-                //TODO Check for existing row
-                if(index == -1){
+                //Check for existing row
+                c = db.get(
+                        db,                               //DB
+                        TableInfo.RESULT_TABLE_NAME,      //Table
+                        new String[]{                     //Selection
+                                TableInfo.RESULT_ID
+                        },
+                        TableInfo.RESULT_GAME_PLAYER_ID + "=? AND " +       //whereClause
+                                TableInfo.RESULT_INDEX + "=?",
+                        new String[]{                     //whereArgs
+                                game_player_id + "",
+                                index + ""
+                        },
+                        null,                             //orderBy
+                        "1"                               //Limit
+                );
+                if(index == 0){
+                    //TODO Get the next possible index and replace the index int
+                }
+                if(c.getCount() == 0){
                     //Insert new row
                     int newRow = (int) db.insert(
                             db,                             //DB
@@ -150,6 +183,21 @@ public class Player {
                     }
                 }else{
                     //Update existing row
+                    ContentValues cv = new ContentValues();
+                    cv.put(TableInfo.RESULT_VALUE, value);
+                    int update = db.update(
+                            db,
+                            TableInfo.RESULT_TABLE_NAME,
+                            cv,
+                            TableInfo.RESULT_GAME_PLAYER_ID + "=? AND " +
+                                    TableInfo.RESULT_INDEX + "=?",
+                            new String[]{
+                                    game_player_id + "",
+                                    index + ""
+                            });
+                    if(update != 0){
+                        return true;
+                    }
                 }
             } catch (Exception e) {
                 e.printStackTrace();

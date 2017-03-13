@@ -8,13 +8,15 @@
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
     tools:context="com.norbye.dev.cardgames.GameActivity"
     tools:showIn="@layout/activity_game"
+    android:fillViewport="true"
     >
     <HorizontalScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-        android:layout_width="match_parent" android:layout_height="fill_parent">
+        android:layout_width="match_parent" android:layout_height="match_parent">
         <TableLayout
             android:id="@+id/game_tableLayout"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="match_parent"
+            android:padding="5dp">
 
         </TableLayout>
     </HorizontalScrollView>

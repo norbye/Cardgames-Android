@@ -1,7 +1,10 @@
 <resources>
     <string name="app_name">Kortspill</string>
     <string name="action_settings">Innstillinger</string>
+    <string name="action_new_player">Ny spiller</string>
+    <string name="action_new_game">Nytt spill</string>
+    <string name="confirm_new_game">Er du sikker på at du vil starte et nytt spill?</string>
 
 
-    <string name="example_game">Eksempel spill</string>
+    <string name="example_game">Eksempelspill</string>
 </resources>

@@ -1,6 +1,7 @@
 package com.norbye.dev.cardgames;
 
 import android.app.AlertDialog;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.database.Cursor;
@@ -13,9 +14,12 @@ import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
@@ -30,6 +34,9 @@ import com.norbye.dev.cardgames.db.TableData.*;
 import com.norbye.dev.cardgames.entities.Game;
 import com.norbye.dev.cardgames.entities.GameType;
 import com.norbye.dev.cardgames.entities.Player;
+
+import java.util.Arrays;
+import java.util.Collections;
 
 /**
  * Created by Jonna on 04.03.2017.
@@ -77,23 +84,7 @@ public class GameActivity extends AppCompatActivity {
             game = new Game(context, c.getInt(c.getColumnIndexOrThrow(TableInfo.GAME_ID)));
         }else{
             //Create new game
-            int gameId = (int) db.insert(
-                    db,                             //DB
-                    TableInfo.GAME_TABLE_NAME,      //Table
-                    new String[]{
-                            TableInfo.GAME_TYPE,
-                            TableInfo.GAME_START,
-                            TableInfo.GAME_ACTIVE
-                    },
-                    new String[]{
-                            gameType.id + "",
-                            System.currentTimeMillis() + "",
-                            "1"
-                    }
-            );
-            if(gameId > 0){
-                game = new Game(context, gameId);
-            }else{
+            if(!newGame()){
                 finish();
             }
         }
@@ -109,6 +100,45 @@ public class GameActivity extends AppCompatActivity {
         loadView();
     }
 
+    private boolean newGame(){
+        //Clear earlier games
+        ContentValues cv = new ContentValues();
+        cv.put(TableInfo.GAME_ACTIVE, 0);
+        db.update(
+                db,
+                TableInfo.GAME_TABLE_NAME,
+                cv,
+                TableInfo.GAME_TYPE + "=? AND " +
+                        TableInfo.GAME_ACTIVE + "=?",
+                new String[]{
+                        gameType.id + "",
+                        "1"
+                }
+        );
+        //Create new game
+        int gameId = (int) db.insert(
+                db,                             //DB
+                TableInfo.GAME_TABLE_NAME,      //Table
+                new String[]{
+                        TableInfo.GAME_TYPE,
+                        TableInfo.GAME_START,
+                        TableInfo.GAME_ACTIVE
+                },
+                new String[]{
+                        gameType.id + "",
+                        System.currentTimeMillis() + "",
+                        "1"
+                }
+        );
+        if(gameId != 0){
+            game = new Game(context, gameId);
+            if(game != null){
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void loadView(){
         TableLayout tl = (TableLayout) findViewById(R.id.game_tableLayout);
         tl.removeAllViews();
@@ -117,18 +147,18 @@ public class GameActivity extends AppCompatActivity {
         }else{
             //Print the top layer
             TableRow trTop = new TableRow(this);
-            trTop.addView(newTextView("Navn"));
+            trTop.addView(newTextView("Navn", "name"));
             if(gameType.rounds == 0){
-                trTop.addView(newTextView("1"));
-                trTop.addView(newTextView("Sum"));
-                trTop.addView(newTextView("Plass"));
+                trTop.addView(newTextView("1", "number"));
+                trTop.addView(newTextView("Sum", "sum"));
+                trTop.addView(newTextView("Plass", "position"));
             }else{
                 for(int i = 1; i <= gameType.rounds; i++){
-                    trTop.addView(newTextView(i + ""));
+                    trTop.addView(newTextView(i + "", "number"));
                 }
                 //Add sum and position
-                trTop.addView(newTextView("Sum"));
-                trTop.addView(newTextView("Plass"));
+                trTop.addView(newTextView("Sum", "sum"));
+                trTop.addView(newTextView("Plass", "position"));
             }
             tl.addView(trTop, 0);
             //Print the other layers
@@ -137,11 +167,14 @@ public class GameActivity extends AppCompatActivity {
             for(int i = 0; i < players.length; i++){
                 //Get the players score
                 int[] score = players[i].getScore(game);
+                System.out.println(Arrays.toString(score));
                 TableRow tr = new TableRow(this);
-                tr.addView(newTextView(players[i].name));
+                tr.setTag("playerID-" + players[i].id);
+                tr.addView(newTextView(players[i].name, "namevalue"));
                 if(gameType.rounds == 0){
                     //Fetch inserted rows and add one more
                     for(int k = 0; k < score.length; k++){
+                        sum[i] += score[k];
                         EditText et = newEditTextNum(score[k] + "");
                         et.setTag(k);
                         et.addTextChangedListener(new GameTextWatcher(game, players[i], et));
@@ -154,34 +187,77 @@ public class GameActivity extends AppCompatActivity {
                 }else{
                     //Fetch inserted values for each row, but display all rows
                     for(int k = 0; k < gameType.rounds; k++){
-                        if(k < score.length) {
+                        if(k < score.length && score[k] != -1) {
+                            sum[i] += score[k];
+                            System.out.println("score: " + k + " " + score[k]);
                             EditText et = newEditTextNum(score[k] + "");
                             et.setTag(k);
                             et.addTextChangedListener(new GameTextWatcher(game, players[i], et));
                             tr.addView(et);
                         }else{
                             EditText et = newEditTextNum("");
-                            et.setTag(-1);
+                            et.setTag(k);
                             et.addTextChangedListener(new GameTextWatcher(game, players[i], et));
                             tr.addView(et);
                         }
                     }
                 }
                 //Add sum and position
-                tr.addView(newTextView(sum[i] + ""));
-                tr.addView(newTextView("-"));
+                System.out.println("sum: " + sum[i]);
+                tr.addView(newTextView(sum[i] + "", "sumvalue"));
+                tr.addView(newTextView("", "positionvalue"));
                 //Append to tablelayout
                 tl.addView(tr);
             }
+            //Edit sum
+            for(int i = 0; i < players.length; i++){
+                TableRow tr = (TableRow) tl.findViewWithTag("playerID-" + players[i].id);
+                if(tr == null){
+                    continue;
+                }
+                Integer[] sum2 = new Integer[sum.length];
+                for(int k = 0; k < sum.length; k++){
+                    sum2[k] = Integer.valueOf(sum[k]);
+                }
+                Arrays.sort(sum2, Collections.reverseOrder());
+                System.out.println("sum2: " + Arrays.toString(sum2));
+                int k;
+                for(k = 0; i < sum.length && k < sum2.length; k++){
+                    if(sum[i] == sum2[k].intValue()){
+                        System.out.println("Foundit!" + k + " " + sum[i]);
+                        break;
+                    }
+                }
+                TextView position = (TextView) tr.getChildAt(tr.getChildCount() - 1);
+                position.setText((k + 1) + "");
+            }
         }
     }
-    private TextView newTextView(String text){
-        return newTextViewFull(text, null, false);
-    }
-    private TextView newTextViewFull(String text, int[] padding, boolean centerText){
+    private TextView newTextView(String text, String type){
         TextView tv = new TextView(this);
         tv.setText(text);
         tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSize);
+        int padding_in_dp = 6;  // 6 dps
+        final float scale = getResources().getDisplayMetrics().density;
+        int padding_in_px = (int) (padding_in_dp * scale + 0.5f);
+        switch(type){
+            case "number":
+                tv.setGravity(Gravity.CENTER_HORIZONTAL);
+                break;
+            case "sum":
+            case "position":
+                tv.setPadding(Math.round(padding_in_px/2), 0, Math.round(padding_in_px/2), 0);
+                break;
+            case "sumvalue":
+            case "positionvalue":
+                tv.setGravity(Gravity.RIGHT);
+                break;
+            case "name":
+            case "namevalue":
+                tv.setPadding(0, 0, padding_in_px, 0);
+                break;
+
+        }
         return tv;
     }
     private EditText newEditTextNum(String text){ return newEditText(text, true); }
@@ -190,6 +266,9 @@ public class GameActivity extends AppCompatActivity {
         et.setText(text);
         if(number){
             et.setInputType(InputType.TYPE_CLASS_NUMBER);
+            float measureText = et.getPaint().measureText("000");
+            et.setWidth(et.getPaddingLeft() + et.getPaddingRight() + (int) measureText);
+            et.setGravity(Gravity.CENTER_HORIZONTAL);
         }
         return et;
     }
@@ -230,14 +309,16 @@ public class GameActivity extends AppCompatActivity {
         acTextView.setThreshold(1);
         acTextView.setId(id);
         acTextView.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        acTextView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
         ll.addView(acTextView);
+        ((InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE)).toggleSoftInput(InputMethodManager.SHOW_FORCED, InputMethodManager.HIDE_IMPLICIT_ONLY);
         alert.setView(ll);
         alert.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             //@Override
             public void onClick(DialogInterface dialog, int which) {
                 AutoCompleteTextView input = (AutoCompleteTextView) ((AlertDialog) dialog).findViewById(id);
                 String playerName = input.getText().toString();
-                if(playerName == ""){
+                if(playerName == "" || playerName == null || playerName.isEmpty()){
                     //Snackbar.make()
                     return;
                 }
@@ -319,8 +400,14 @@ public class GameActivity extends AppCompatActivity {
         public void afterTextChanged(Editable editable) {
             //Update table with new values
             try {
-                player.setScore(game, Integer.parseInt(editText.getTag().toString()), Integer.parseInt(editable.toString()));
-                loadView();
+                int index = Integer.parseInt(editText.getTag().toString());
+                int value = 0;
+                if(editable.toString() != "") {
+                    value = Integer.parseInt(editable.toString());
+                }
+                if(player.setScore(game, index, value)){
+                    loadView();
+                }
             }catch(Exception e){
                 e.printStackTrace();
             }
@@ -330,7 +417,7 @@ public class GameActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
+        getMenuInflater().inflate(R.menu.menu_game, menu);
         return true;
     }
 
@@ -343,6 +430,29 @@ public class GameActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            return true;
+        }else if(id == R.id.action_new_game){
+            //Create new game
+            new AlertDialog.Builder(context)
+                    .setMessage(getResources().getString(R.string.confirm_new_game))
+                    .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            // continue with delete
+                            if(newGame()) {
+                                loadView();
+                            }
+                        }
+                    })
+                    .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            // do nothing
+                        }
+                    })
+                    .setIcon(android.R.drawable.ic_dialog_alert)
+                    .show();
+            return true;
+        }else if(id == R.id.action_new_player){
+            addPlayer();
             return true;
         }
 

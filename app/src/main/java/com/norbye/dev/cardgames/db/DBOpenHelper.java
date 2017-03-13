@@ -15,6 +15,10 @@ import com.norbye.dev.cardgames.db.TableData.*;
 
 public class DBOpenHelper extends SQLiteOpenHelper {
 
+    //Make DB publicly available
+    public SQLiteDatabase DBwrite;
+    public SQLiteDatabase DBread;
+
     private static final String GAMETYPE_TABLE_CREATE =
             "CREATE TABLE IF NOT EXISTS " + TableInfo.GAMETYPE_TABLE_NAME + " (" +
                     TableInfo.GAMETYPE_ID + " INTEGER PRIMARY KEY," +
@@ -90,15 +94,17 @@ public class DBOpenHelper extends SQLiteOpenHelper {
     }
 
     public long insert(DBOpenHelper db, String table, String[] columns, String[] values){
+        if(DBwrite == null){
+            DBwrite = db.getWritableDatabase();
+        }
         try{
-            SQLiteDatabase SQDB = db.getWritableDatabase();
             ContentValues cv = new ContentValues();
 
             for(int i = 0; i < columns.length && i < values.length; i++){
                 cv.put(columns[i], values[i]);
             }
 
-            return SQDB.insert(table, null, cv);
+            return DBwrite.insert(table, null, cv);
         }catch(Exception e){
             e.printStackTrace();
         }
@@ -106,15 +112,29 @@ public class DBOpenHelper extends SQLiteOpenHelper {
     }
 
     public Cursor get(DBOpenHelper db, String table, String[] columns, String whereClause, String[] whereArgs, String orderBy, String limit){
-        SQLiteDatabase SQDB = db.getReadableDatabase();
+        if(DBread == null){
+            DBread = db.getReadableDatabase();
+        }
         /*
         columns - columns to select
         whereClause - where clause
         whereArgs - content that fills the ?s in the whereClause
         orderBY order
          */
-        Cursor cr = SQDB.query(table, columns,
+        Cursor cr = DBread.query(table, columns,
                 whereClause, whereArgs, null, null, orderBy, limit);
         return cr;
+    }
+
+    public int update(DBOpenHelper db, String table, ContentValues cv, String whereClause, String[] whereArgs){
+        if(DBwrite == null){
+            DBwrite = db.getWritableDatabase();
+        }
+        try {
+            return DBwrite.update(table, cv, whereClause, whereArgs);
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+        return 0;
     }
 }
