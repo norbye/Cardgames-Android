@@ -2,6 +2,7 @@ package com.norbye.dev.cardgames.entities;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.widget.Toast;
 
 import com.norbye.dev.cardgames.db.DBOpenHelper;
 import com.norbye.dev.cardgames.db.TableData.*;
@@ -101,5 +102,59 @@ public class Player {
             }
         }
         return score;
+    }
+
+    public boolean setScore(Game game, int index, int value){
+        //Get the game_player
+        Toast.makeText(context, "gameID: " + game.id + " index " + index + "val " + value, Toast.LENGTH_SHORT).show();
+        Cursor c = db.get(
+                db,                               //DB
+                TableInfo.GAME_PLAYER_TABLE_NAME,      //Table
+                new String[]{                     //Selection
+                        TableInfo.GAME_PLAYER_ID
+                },
+                TableInfo.GAME_PLAYER_PLAYER_ID + "=? AND " +       //whereClause
+                        TableInfo.GAME_PLAYER_GAME_ID + "=?",
+                new String[]{                     //whereArgs
+                        this.id + "",
+                        game.id + ""
+                },
+                null,                             //orderBy
+                "1"                               //Limit
+        );
+        if(c.getCount() > 0) {
+            c.moveToFirst();
+            try {
+                int game_player_id = c.getInt(c.getColumnIndexOrThrow(TableInfo.GAME_PLAYER_ID));
+                //TODO Check for existing row
+                if(index == -1){
+                    //Insert new row
+                    int newRow = (int) db.insert(
+                            db,                             //DB
+                            TableInfo.RESULT_TABLE_NAME,      //Table
+                            new String[]{
+                                    TableInfo.RESULT_GAME_PLAYER_ID,
+                                    TableInfo.RESULT_INDEX,
+                                    TableInfo.RESULT_VALUE
+                            },
+                            new String[]{
+                                    game_player_id + "",
+                                    index + "",
+                                    value + ""
+                            }
+                    );
+                    if(newRow > 0){
+                        return true;
+                    }else{
+                        return false;
+                    }
+                }else{
+                    //Update existing row
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return false;
     }
 }

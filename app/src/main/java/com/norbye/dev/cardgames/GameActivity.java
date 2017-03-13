@@ -144,20 +144,26 @@ public class GameActivity extends AppCompatActivity {
                     for(int k = 0; k < score.length; k++){
                         EditText et = newEditTextNum(score[k] + "");
                         et.setTag(k);
-                        et.addTextChangedListener(twGame);
+                        et.addTextChangedListener(new GameTextWatcher(game, players[i], et));
                         tr.addView(et);
                     }
-                    tr.addView(newEditTextNum(""));
+                    EditText et = newEditTextNum("");
+                    et.setTag(-1);
+                    et.addTextChangedListener(new GameTextWatcher(game, players[i], et));
+                    tr.addView(et);
                 }else{
                     //Fetch inserted values for each row, but display all rows
                     for(int k = 0; k < gameType.rounds; k++){
                         if(k < score.length) {
                             EditText et = newEditTextNum(score[k] + "");
                             et.setTag(k);
-                            et.addTextChangedListener(twGame);
+                            et.addTextChangedListener(new GameTextWatcher(game, players[i], et));
                             tr.addView(et);
                         }else{
-                            tr.addView(newEditTextNum(""));
+                            EditText et = newEditTextNum("");
+                            et.setTag(-1);
+                            et.addTextChangedListener(new GameTextWatcher(game, players[i], et));
+                            tr.addView(et);
                         }
                     }
                 }
@@ -287,22 +293,39 @@ public class GameActivity extends AppCompatActivity {
         alert.show();
     }
 
-    private TextWatcher twGame = new TextWatcher() {
+    public class GameTextWatcher implements TextWatcher {
+
+        private Game game;
+        private Player player;
+        private EditText editText;
+
+        public GameTextWatcher(Game game, Player player, EditText editText) {
+            this.game = game;
+            this.player = player;
+            this.editText = editText;
+        }
+
         @Override
         public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
 
         }
 
         @Override
-        public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+        public void onTextChanged(CharSequence s, int start, int before, int count) {
 
         }
 
         @Override
         public void afterTextChanged(Editable editable) {
             //Update table with new values
+            try {
+                player.setScore(game, Integer.parseInt(editText.getTag().toString()), Integer.parseInt(editable.toString()));
+                loadView();
+            }catch(Exception e){
+                e.printStackTrace();
+            }
         }
-    };
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
