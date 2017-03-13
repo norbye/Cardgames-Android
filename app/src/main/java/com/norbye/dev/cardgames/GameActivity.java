@@ -133,24 +133,36 @@ public class GameActivity extends AppCompatActivity {
             tl.addView(trTop, 0);
             //Print the other layers
             Player[] players = game.getPlayers();
+            int[] sum = new int[players.length];
             for(int i = 0; i < players.length; i++){
                 //Get the players score
                 int[] score = players[i].getScore(game);
                 TableRow tr = new TableRow(this);
                 tr.addView(newTextView(players[i].name));
                 if(gameType.rounds == 0){
+                    //Fetch inserted rows and add one more
+                    for(int k = 0; k < score.length; k++){
+                        EditText et = newEditTextNum(score[k] + "");
+                        et.setTag(k);
+                        et.addTextChangedListener(twGame);
+                        tr.addView(et);
+                    }
                     tr.addView(newEditTextNum(""));
                 }else{
+                    //Fetch inserted values for each row, but display all rows
                     for(int k = 0; k < gameType.rounds; k++){
                         if(k < score.length) {
-                            tr.addView(newEditTextNum(score[k] + ""));
+                            EditText et = newEditTextNum(score[k] + "");
+                            et.setTag(k);
+                            et.addTextChangedListener(twGame);
+                            tr.addView(et);
                         }else{
                             tr.addView(newEditTextNum(""));
                         }
                     }
                 }
                 //Add sum and position
-                tr.addView(newTextView("0"));
+                tr.addView(newTextView(sum[i] + ""));
                 tr.addView(newTextView("-"));
                 //Append to tablelayout
                 tl.addView(tr);
@@ -275,7 +287,7 @@ public class GameActivity extends AppCompatActivity {
         alert.show();
     }
 
-    private TextWatcher gameTw = new TextWatcher() {
+    private TextWatcher twGame = new TextWatcher() {
         @Override
         public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
 
@@ -288,7 +300,7 @@ public class GameActivity extends AppCompatActivity {
 
         @Override
         public void afterTextChanged(Editable editable) {
-
+            //Update table with new values
         }
     };
 
