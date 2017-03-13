@@ -134,13 +134,19 @@ public class GameActivity extends AppCompatActivity {
             //Print the other layers
             Player[] players = game.getPlayers();
             for(int i = 0; i < players.length; i++){
+                //Get the players score
+                int[] score = players[i].getScore(game);
                 TableRow tr = new TableRow(this);
                 tr.addView(newTextView(players[i].name));
                 if(gameType.rounds == 0){
-                    tr.addView(newEditText(""));
+                    tr.addView(newEditTextNum(""));
                 }else{
                     for(int k = 0; k < gameType.rounds; k++){
-                        tr.addView(newEditText(""));
+                        if(k < score.length) {
+                            tr.addView(newEditTextNum(score[k] + ""));
+                        }else{
+                            tr.addView(newEditTextNum(""));
+                        }
                     }
                 }
                 //Add sum and position
@@ -160,9 +166,13 @@ public class GameActivity extends AppCompatActivity {
         tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSize);
         return tv;
     }
-    private EditText newEditText(String hint){
+    private EditText newEditTextNum(String text){ return newEditText(text, true); }
+    private EditText newEditText(String text, boolean number){
         EditText et = new EditText(this);
-        et.setHint(hint);
+        et.setText(text);
+        if(number){
+            et.setInputType(InputType.TYPE_CLASS_NUMBER);
+        }
         return et;
     }
 

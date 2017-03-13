@@ -48,8 +48,58 @@ public class Player {
         }
     }
 
-    public double getScore(Game game){
-        double score = 0;
+    public int[] getScore(Game game){
+        int[] score = new int[0];
+        //Get score from game
+        Cursor c = db.get(
+                db,                               //DB
+                TableInfo.GAME_PLAYER_TABLE_NAME,      //Table
+                new String[]{                     //Selection
+                        TableInfo.GAME_PLAYER_ID
+                },
+                TableInfo.GAME_PLAYER_PLAYER_ID + "=? AND " +       //whereClause
+                TableInfo.GAME_PLAYER_GAME_ID + "=?",
+                new String[]{                     //whereArgs
+                        this.id + "",
+                        game.id + ""
+                },
+                null,                             //orderBy
+                "1"                               //Limit
+        );
+        if(c.getCount() > 0) {
+            c.moveToFirst();
+            try {
+                int game_player_id = c.getInt(c.getColumnIndexOrThrow(TableInfo.GAME_PLAYER_ID));
+                c = db.get(
+                        db,                               //DB
+                        TableInfo.RESULT_TABLE_NAME,      //Table
+                        new String[]{                     //Selection
+                                TableInfo.RESULT_INDEX,
+                                TableInfo.RESULT_VALUE
+                        },
+                        TableInfo.RESULT_GAME_PLAYER_ID + "=?",       //whereClause
+                        new String[]{                     //whereArgs
+                                game_player_id + ""
+                        },
+                        TableInfo.RESULT_INDEX,                             //orderBy
+                        null                               //Limit
+                );
+                if(c.getCount() > 0) {
+                    //Get last index
+                    c.moveToLast();
+                    score = new int[c.getInt(c.getColumnIndexOrThrow(TableInfo.RESULT_INDEX)) + 1];
+                    //Store values
+                    c.moveToFirst();
+                    try {
+                        score[c.getInt(c.getColumnIndexOrThrow(TableInfo.RESULT_INDEX))] = c.getInt(c.getColumnIndexOrThrow(TableInfo.RESULT_VALUE));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
         return score;
     }
 }
