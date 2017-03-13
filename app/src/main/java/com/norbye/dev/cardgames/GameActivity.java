@@ -7,7 +7,6 @@ import android.content.DialogInterface;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
@@ -18,7 +17,6 @@ import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
@@ -35,6 +33,7 @@ import com.norbye.dev.cardgames.entities.Game;
 import com.norbye.dev.cardgames.entities.GameType;
 import com.norbye.dev.cardgames.entities.Player;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -143,12 +142,72 @@ public class GameActivity extends AppCompatActivity {
         TableLayout tl = (TableLayout) findViewById(R.id.game_tableLayout);
         tl.removeAllViews();
         if(gameType.direction_vertical) {
-
+            TableRow trTop = new TableRow(this);
+            Player[] players = game.getPlayers();
+            trTop.addView(newTextView("", ""));
+            int rows = 0;
+            ArrayList score = new ArrayList();
+            for(int i = 0; i < players.length; i++){
+                trTop.addView(newTextView(players[i].name, "namevalue"));
+                score.add(i, players[i].getScore(game));
+                if(((int[]) score.get(i)).length > rows){
+                    rows = ((int[]) score.get(i)).length;
+                }
+            }
+            tl.addView(trTop);
+            //Add game values
+            int[] sum = new int[players.length];
+            for(int i = 0; i < rows + 1; i++){ //Loop rows
+                TableRow tr = new TableRow(this);
+                //Add label
+                tr.addView(newTextView((i + 1) + "", "number"));
+                //Add values
+                for(int k = 0; k < score.size(); k++){ //Loop players
+                    if(i < ((int[]) score.get(k)).length && ((int[]) score.get(k))[i] != -1) {
+                        sum[k] += ((int[]) score.get(k))[i];
+                        EditText et = newEditTextNum(((int[]) score.get(k))[i] + "");
+                        et.setTag(k);
+                        et.addTextChangedListener(new GameTextWatcher(game, players[k], et));
+                        tr.addView(et);
+                    }else{
+                        EditText et = newEditTextNum("");
+                        et.setTag(k);
+                        et.addTextChangedListener(new GameTextWatcher(game, players[k], et));
+                        tr.addView(et);
+                    }
+                }
+                tl.addView(tr);
+            }
+            //Add sum and position
+            TableRow trSum = new TableRow(this);
+            trSum.addView(newTextView("Sum", "sum"));
+            for(int i = 0; i < players.length; i++){
+                trSum.addView(newTextView(sum[i] + "", "sumvalue"));
+            }
+            tl.addView(trSum);
+            TableRow trPosition = new TableRow(this);
+            trPosition.addView(newTextView("Plass", "position"));
+            for(int i = 0; i < players.length; i++){
+                Integer[] sum2 = new Integer[sum.length];
+                for(int k = 0; k < sum.length; k++){
+                    sum2[k] = Integer.valueOf(sum[k]);
+                }
+                Arrays.sort(sum2, Collections.reverseOrder());
+                int k;
+                for(k = 0; i < sum.length && k < sum2.length; k++){
+                    if(sum[i] == sum2[k].intValue()){
+                        break;
+                    }
+                }
+                trPosition.addView(newTextView((k + 1) + "", "positionvalue"));
+            }
+            tl.addView(trPosition);
         }else{
             //Print the top layer
             TableRow trTop = new TableRow(this);
             trTop.addView(newTextView("Navn", "name"));
             if(gameType.rounds == 0){
+                //TODO display all used indexes
                 trTop.addView(newTextView("1", "number"));
                 trTop.addView(newTextView("Sum", "sum"));
                 trTop.addView(newTextView("Plass", "position"));
